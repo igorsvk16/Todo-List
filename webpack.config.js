@@ -1,4 +1,5 @@
 const path = require("path");
+const HtmlWebpackPlugin = require("html-webpack-plugin");
 
 module.exports = {
   mode: "development",
@@ -18,19 +19,29 @@ module.exports = {
         }),
     ],
     module: {
-        rules: [
-            {
-                test: /\.css$/i,
-                use: ["style-loader", "css-loader"],
-            },
-            {
-                test: /\.html$/i,
-                loader: "html-loader",
-            },
-            {
-                test: /\.(png|svg|jpg|jpeg|gif)$/i,
-                type: "asset/resource",
-            }
-        ],
+    rules: [
+        {
+        test: /\.js$/,
+        exclude: /node_modules/,
+        type: "javascript/esm",
+        use: {
+            loader: "babel-loader",
+            options: { presets: ["@babel/preset-env"] },
+        },
+        },
+        {
+        test: /\.css$/i,
+        use: ["style-loader", "css-loader"],
+        },
+        {
+        test: /\.html$/i,
+        loader: "html-loader",
+        },
+        {
+        test: /\.(png|svg|jpg|jpeg|gif)$/i,
+        type: "asset/resource",
+        },
+    ],
     },
+
 };
