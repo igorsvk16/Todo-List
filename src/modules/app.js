@@ -39,8 +39,10 @@ export function addProject(name) {
 }
 
 export function setCurrentProject(projectId) {
-    state.currentProjectId = projectId;
-    storage.save(state);
+  const p = state.projects.find(x => x.id === projectId);
+  if (!p) return false;
+  state.currentProjectId = p.id;
+  return true;
 }
 
 export function addTodo(projectId, todoData) {
@@ -52,3 +54,21 @@ export function addTodo(projectId, todoData) {
     storage.save(state)
     return todo.id;
 };
+
+export function removeTodo(projectId, todoId) {
+    const p = state.projects.find(x => x.id === projectId);
+    if (!p) return false;
+    const idx = p.todos.findIndex(t => t.id === todoId)
+    if (idx === -1) return false;
+    p.todos.splice(idx, 1);
+    return true;
+}
+
+export function toggleTodo(projectId, todoId) {
+    const p = state.projects.find(x => x.id === projectId);
+    if (!p) return false;
+    const t = p.todos.find(x => x.id === todoId);
+    if (!t) return false;
+    t.completed = !t.completed;
+    return true;
+}
