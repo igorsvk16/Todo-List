@@ -1,6 +1,6 @@
 import { renderApp } from "./appView";
 import { addProject, addTodo, getState, setCurrentProject, removeTodo, toggleTodo } from "../app";
-import { createLayout } from "./layout";
+import { getExpandedTodoId, setExpandedTodoId } from "./todosView";
 
 let isBound = false;
 
@@ -46,18 +46,30 @@ export function bindUI() {
         renderApp();
     });
 
-    main.addEventListener((e) => {
-        const deleteBtn = e.target.closest("[data-action='delete'");
-    })
-
     main.addEventListener("click", (e) => {
-        const btn = e.target.closest("[data-action='delete']");
-        if (!btn) return;
+        const deleteBtn = e.target.closest("[data-action='delete']");
+        if (deleteBtn) {
+            const todoItem = deleteBtn.closest("[data-todo-id]");
+            if (!todoItem) return;
 
-        const item = btn.closest("[data-todo-id]");
+            removeTodo(getState().currentProjectId, todoItem.dataset.todoId);
+            renderApp();
+            return;
+        }
+
+        const item = e.target.closest(".todo-item");
         if (!item) return;
 
-        removeTodo(getState().currentProjectId, item.dataset.todoId);
+        if (e.target.closest("input[type='checkbox'][data-action='toggle']")) return;
+
+        const todoId = item.dataset.todoId;
+        if (!todoId) return;
+
+        if (getExpandedTodoId() === todoId) {
+            setExpandedTodoId(null); 
+        } else {
+            setExpandedTodoId(todoId);
+        }
         renderApp();
     });
 
@@ -70,5 +82,5 @@ export function bindUI() {
 
         toggleTodo(getState().currentProjectId, item.dataset.todoId);
         renderApp();
-    })
-}
+    });
+};
