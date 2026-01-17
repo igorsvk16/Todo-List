@@ -3,7 +3,7 @@ export function createTodo({
     title = "",
     description = "",
     dueDate = "",
-    priority = "normal",
+    priority = "medium",
     notes = "",
     completed = false,
 } = {}) {

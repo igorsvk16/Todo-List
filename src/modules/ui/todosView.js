@@ -1,5 +1,15 @@
 import { getState } from "../app";
 
+let expandedTodoId = null;
+
+export function setExpandedTodoId(id) {
+    expandedTodoId = id;
+};
+
+export function getExpandedTodoId() {
+    return expandedTodoId;
+}
+
 export function renderTodos(main) {
     const { projects, currentProjectId } = getState();
     main.innerHTML = "";
@@ -23,13 +33,14 @@ export function renderTodos(main) {
         li.innerHTML = `
             <label>
                 <input type="checkbox" data-action="toggle" ${todo.completed ? "checked" : ""} />
-                <span class="todo-title">${todo-title}</span>
-                <label>
-                <span class="todo-priority>${todo.priority ?? ""}</span>
+                <span class="todo-title">${todo.title}</span>
+                <span class="todo-due">${todo.dueDate ? todo.dueDate : ""}</span>
+            </label>
+                <span class="todo-priority">${todo.priority ?? ""}</span>
                 <button type="button" data-action="delete">×</button>
         `;
 
-        list.append(list);
+        list.append(li);
     });
 
     main.append(list);
@@ -38,9 +49,10 @@ export function renderTodos(main) {
     form.className = 'todo-form';
     form.innerHTML = /* html */`
         <input name="title" placeholder="New todo" required />
+        <input type="date" name="dueDate" />
         <select name="priority">
             <option value="low">Low</option>
-            <option value="medium">Medium</option>
+            <option value="medium" selected>Medium</option>
             <option value="high">High</option>
         </select>
         <button type="submit">Add todo</button>

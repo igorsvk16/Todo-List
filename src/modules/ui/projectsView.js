@@ -1,8 +1,9 @@
 import { getState } from "../app";
 
 export function renderProjects(sidebar) {
-    const { projects, currentProjectId } = getState;
-    sidebar.innerHtml = "";
+    const { projects, currentProjectId } = getState();
+
+    sidebar.innerHTML = "";
 
     const title = document.createElement("h2");
     title.textContent = "Projects";
@@ -23,12 +24,14 @@ export function renderProjects(sidebar) {
         li.append(btn);
         list.append(li);
 
-        const form = document.createElement("form");
-        form.className = "project-form";
-        form.innerHTML = `
-            <input name="name" placeholder="New prjoect" required />
-            <button type="submit">Add</button>
-            `;
-            sidebar.append(form);
     });
+    const form = document.createElement("form");
+    form.className = "project-form";
+    form.innerHTML = `
+        <input name="name" placeholder="New project" required />
+        <button type="submit">Add</button>
+    `;
+
+    sidebar.append(list);
+    sidebar.append(form);
 }
