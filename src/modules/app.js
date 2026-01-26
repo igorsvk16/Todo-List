@@ -79,3 +79,15 @@ export function toggleTodo(projectId, todoId) {
     storage.save(state);
     return true;
 }
+
+export function updateTodo(projectId, todoId, updates) {
+    const project = state.projects.find(p => p.id === projectId);
+    if (!project) return false;
+
+    const todo = project.todos.find(t => t.id === todoId);
+    if (!todo) return false;
+
+    Object.assign(todo, updates);
+    storage.save(state);
+    return true;
+}

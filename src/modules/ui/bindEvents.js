@@ -1,5 +1,5 @@
 import { renderApp } from "./appView";
-import { addProject, addTodo, getState, setCurrentProject, removeTodo, toggleTodo } from "../app";
+import { addProject, addTodo, getState, setCurrentProject, removeTodo, toggleTodo, updateTodo } from "../app";
 import { getExpandedTodoId, setExpandedTodoId } from "./todosView";
 
 let isBound = false;
@@ -56,7 +56,8 @@ export function bindUI() {
             renderApp();
             return;
         }
-
+        
+        if (e.target.closest(".todo-edit-form")) return;
         const item = e.target.closest(".todo-item");
         if (!item) return;
 
@@ -83,4 +84,27 @@ export function bindUI() {
         toggleTodo(getState().currentProjectId, item.dataset.todoId);
         renderApp();
     });
+
+    main.addEventListener("submit", (e) => {
+        if (!e.target.matches(".todo-edit-form")) return;
+        e.preventDefault();
+
+        const todoId = e.target.dataset.todoId;
+        if (!todoId) return;
+
+        const fd = new FormData(e.target);
+        const title = (fd.get("title") ?? "").trim();
+        if (!title) return;
+
+        updateTodo(getState().currentProjectId, todoId, {
+            title,
+            description: (fd.get("description") ?? "").trim(),
+            dueDate: fd.get("dueDate") ?? "",
+            priority: fd.get("priority") ?? "medium",
+            notes: (fd.get("notes") ?? "").trim(),
+        });
+        
+        setExpandedTodoId(null);
+        renderApp();
+    })
 };

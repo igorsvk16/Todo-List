@@ -33,7 +33,7 @@ bindUI();
     margin-left: 12px;
     opacity: 0.7;
     font-size: 0.9em;
-};
+}
 ```
 
 ## src/modules/app.js
@@ -120,6 +120,18 @@ export function toggleTodo(projectId, todoId) {
     storage.save(state);
     return true;
 }
+
+export function updateTodo(projectId, todoId, updates) {
+    const project = state.projects.find(p => p.id === projectId);
+    if (!project) return false;
+
+    const todo = project.todos.find(t => t.id === todoId);
+    if (!todo) return false;
+
+    Object.assign(todo, updates);
+    storage.save(state);
+    return true;
+}
 ```
 
 ## src/modules/project.js
@@ -195,8 +207,8 @@ export function renderApp() {
 
 ```js
 import { renderApp } from "./appView";
-import { addProject, addTodo, getState, setCurrentProject, removeTodo, toggleTodo } from "../app";
-import { createLayout } from "./layout";
+import { addProject, addTodo, getState, setCurrentProject, removeTodo, toggleTodo, updateTodo } from "../app";
+import { getExpandedTodoId, setExpandedTodoId } from "./todosView";
 
 let isBound = false;
 
@@ -243,13 +255,30 @@ export function bindUI() {
     });
 
     main.addEventListener("click", (e) => {
-        const btn = e.target.closest("[data-action='delete']");
-        if (!btn) return;
+        const deleteBtn = e.target.closest("[data-action='delete']");
+        if (deleteBtn) {
+            const todoItem = deleteBtn.closest("[data-todo-id]");
+            if (!todoItem) return;
 
-        const item = btn.closest("[data-todo-id]");
+            removeTodo(getState().currentProjectId, todoItem.dataset.todoId);
+            renderApp();
+            return;
+        }
+        
+        if (e.target.closest(".todo-edit-form")) return;
+        const item = e.target.closest(".todo-item");
         if (!item) return;
 
-        removeTodo(getState().currentProjectId, item.dataset.todoId);
+        if (e.target.closest("input[type='checkbox'][data-action='toggle']")) return;
+
+        const todoId = item.dataset.todoId;
+        if (!todoId) return;
+
+        if (getExpandedTodoId() === todoId) {
+            setExpandedTodoId(null); 
+        } else {
+            setExpandedTodoId(todoId);
+        }
         renderApp();
     });
 
@@ -262,9 +291,31 @@ export function bindUI() {
 
         toggleTodo(getState().currentProjectId, item.dataset.todoId);
         renderApp();
+    });
+
+    main.addEventListener("submit", (e) => {
+        if (!e.target.matches(".todo-edit-form")) return;
+        e.preventDefault();
+
+        const todoId = e.target.dataset.todoId;
+        if (!todoId) return;
+
+        const fd = new FormData(e.target);
+        const title = (fd.get("title") ?? "").trim();
+        if (!title) return;
+
+        updateTodo(getState().currentProjectId, todoId, {
+            title,
+            description: (fd.get("description") ?? "").trim(),
+            dueDate: fd.get("dueDate") ?? "",
+            priority: fd.get("priority") ?? "medium",
+            notes: (fd.get("notes") ?? "").trim(),
+        });
+        
+        setExpandedTodoId(null);
+        renderApp();
     })
-    return { sidebar, main } = createLayout();
-}
+};
 ```
 
 ## src/modules/ui/layout.js
@@ -328,12 +379,12 @@ export function renderProjects(sidebar) {
 
     });
     const form = document.createElement("form");
-        form.className = "project-form";
-        form.innerHTML = `
-            <input name="name" placeholder="New project" required />
-            <button type="submit">Add</button>
-        `;
-        
+    form.className = "project-form";
+    form.innerHTML = `
+        <input name="name" placeholder="New project" required />
+        <button type="submit">Add</button>
+    `;
+
     sidebar.append(list);
     sidebar.append(form);
 }
@@ -343,6 +394,16 @@ export function renderProjects(sidebar) {
 
 ```js
 import { getState } from "../app";
+
+let expandedTodoId = null;
+
+export function setExpandedTodoId(id) {
+    expandedTodoId = id;
+}
+
+export function getExpandedTodoId() {
+    return expandedTodoId;
+}
 
 export function renderTodos(main) {
     const { projects, currentProjectId } = getState();
@@ -370,10 +431,51 @@ export function renderTodos(main) {
                 <span class="todo-title">${todo.title}</span>
                 <span class="todo-due">${todo.dueDate ? todo.dueDate : ""}</span>
             </label>
-                <span class="todo-priority">${todo.priority ?? ""}</span>
-                <button type="button" data-action="delete">×</button>
+            <span class="todo-priority">${todo.priority ?? ""}</span>
+            <button type="button" data-action="delete">×</button>
         `;
 
+        const isExpanded = todo.id === expandedTodoId;
+        if (isExpanded) {
+            const form = document.createElement("form");
+            form.className = "todo-edit-form";
+            form.dataset.todoId = todo.id;
+
+            form.innerHTML = /* html */ `
+            <div>
+                <label>Title</label>
+                <input name="title" value="${todo.title ?? ""}" required />
+            </div>
+
+            <div>
+                <label>Description</label>
+                <textarea name="description">${todo.description ?? ""}</textarea>
+            </div>
+
+            <div>
+                <label>Due date</label>
+                <input type="date" name="dueDate" value="${todo.dueDate ?? ""}" />
+            </div>
+
+            <div>
+                <label>Priority</label>
+                <select name="priority">
+                    <option value="low" ${todo.priority === "low" ? "selected" : ""}>Low</option>
+                    <option value="medium" ${todo.priority === "medium" ? "selected" : ""}>Medium</option>
+                    <option value="high" ${todo.priority === "high" ? "selected" : ""}>High</option>
+                </select>
+            </div>
+
+            <div>
+                <label>Notes</label>
+                <textarea name="notes">${todo.notes ?? ""}</textarea>
+            </div>
+            <div class="todo-edit-actions">
+                <button type="submit">Save</button>
+            </div>
+            `;
+            li.append(form);
+        }
         list.append(li);
     });
 
@@ -383,7 +485,7 @@ export function renderTodos(main) {
     form.className = 'todo-form';
     form.innerHTML = /* html */`
         <input name="title" placeholder="New todo" required />
-        <input> type="date" name="dueDate" />
+        <input type="date" name="dueDate" />
         <select name="priority">
             <option value="low">Low</option>
             <option value="medium" selected>Medium</option>
@@ -466,6 +568,7 @@ module.exports = {
         {
         test: /\.js$/,
         exclude: /node_modules/,
+        type: "javascript/esm",
         use: {
             loader: "babel-loader",
             options: { presets: ["@babel/preset-env"] },
